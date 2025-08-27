@@ -1,7 +1,7 @@
 const canvas = document.querySelector('#chessDisp')
 const ctx = canvas.getContext('2d')
 ctx.fillStyle = 'red'
-ctx.font = 100 + 'px Arial';
+ctx.font = 80 + 'px Arial';
 
 const whiteSymbols = ['♙', '♖', '♘', '♗', '♕', '♔'];
 const blackSymbols = ['♟︎', '♜', '♞', '♝', '♛', '♚']
@@ -12,9 +12,10 @@ class chessBoard {
     constructor(scale) {
         this.board = createChessBoard()
         this.scale = scale
-        this.draw()
         this.movePiece(0,0,4,4)
-        console.log(this.getMoves(4,4))
+        this.focusedPos = {x: 4,y: 4}
+        this.moves = this.getMoves(this.focusedPos.x,this.focusedPos.y)
+        this.draw()
     }
     getMoves(x,y) {
         const piece = this.board[y][x]
@@ -25,62 +26,39 @@ class chessBoard {
         let moves = []
         switch(piece.type) {
             case 1:
-                moves.concat(this.checkMovesInRow(x,y,side))
-                moves.concat(this.checkMovesInCol(x,y,side))
+                const dirs = [
+                    {dx: 1,dy: 0},
+                    {dx: -1,dy: 0},
+                    {dx: 0, dy: 1},
+                    {dx: 0, dy: -1},
+                ]
+                return this.checkMovesVerDiag(x,y,side,dirs)
+            break;
+            case 3: 
+
             break;
         }
         return moves
     }
-    checkMovesInRow(x,y,side) {
+    checkMovesVerDiag(x,y,side,dirs) {
         let moves = []
-        for(let newX = x; newX < 8; newX++) {
-            const move = {kill:false,x:newX,y:y}
-            const piece = this.board[y][newX]
-            if(!piece) {
-                moves.push(move)
-                console.log(newX,y)
-            }else if(piece.side !== side) {
-                move.kill = true;
-                moves.push(move)
-                console.log('kill')
-                break;
-            }else if(piece.side == side) {
-                move.kill = true;
-                moves.push(move)
-                console.log(piece)
-                break;
-            }
-        }
-        for(let newX = x; newX > 0; newX--) {
-            const move = {kill:false,x:newX,y:y}
-            const piece = this.board[y][newX]
-            if(piece.side != side) {
-                move.kill = true;
-            }else if(!piece) {
-                moves.push(move)
-            }
-        }
-        console.log(moves)
-        return moves
-    }
-    checkMovesInCol(x,y,side) {
-        let moves = []
-        for(let newY = y; newY < 8; newY++) {
-            const move = {kill:false,x:x,y:newY}
-            const piece = this.board[newY][x]
-            if(piece.side != side) {
-                move.kill = true;
-            }else if(!piece) {
-                moves.push(move)
-            }
-        }
-        for(let newY = y; newY > 0; newY--) {
-            const move = {kill:false,x:x,y:newY}
-            const piece = this.board[newY][x]
-            if(piece.side != side) {
-                move.kill = true;
-            }else if(!piece) {
-                moves.push(move)
+        for(let dir of dirs) {
+            for(let i = 1; i < 8; i++) {
+                const newX = x + i * dir.dx
+                const newY = y + i * dir.dy
+                if(newY >= 8 || newY < 0 || newX >= 8 || newX < 0 ) {
+                    break;
+
+                }
+                const piece = this.board[newY][newX]
+                if (!piece) {
+                    moves.push({ kill: false, x: newX, y: newY })
+                } else if (piece.side !== side) {
+                    moves.push({ kill: true, x: newX, y: newY })
+                    break;
+                } else {
+                    break;
+                }
             }
         }
         return moves
@@ -114,6 +92,21 @@ class chessBoard {
                     ctx.fillStyle = 'black'
                     ctx.fillText(symbol, xDraw, yDraw+this.scale);
                 }
+            }
+        }
+        if(this.moves) {
+            let lastKill = true
+            for(let move of this.moves) {
+                const xDraw = move.x * this.scale
+                const yDraw = move.y * this.scale
+                if(move.kill) {
+                    ctx.fillStyle = '#5c0d0d79'
+                    lastKill = true
+                }else if(lastKill){
+                    ctx.fillStyle = '#0d5c3179'
+                    lastKill = false
+                }
+                ctx.fillRect(xDraw,yDraw,this.scale,this.scale)
             }
         }
     }
@@ -168,4 +161,4 @@ class Piece {
         this.side = side
     }
 }
-const board = new chessBoard(100)
+const board = new chessBoard(80)
